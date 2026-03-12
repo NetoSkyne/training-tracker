@@ -1,0 +1,291 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+  <meta name="apple-mobile-web-app-title" content="Training" />
+  <title>Training Tracker</title>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/react/18.2.0/umd/react.production.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/react-dom/18.2.0/umd/react-dom.production.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/babel-standalone/7.23.2/babel.min.js"></script>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+    body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background: #f5f5f7; min-height: 100vh; padding-bottom: env(safe-area-inset-bottom); }
+    input[type=number]::-webkit-inner-spin-button, input[type=number]::-webkit-outer-spin-button { opacity: 1; }
+    .safe-top { padding-top: max(16px, env(safe-area-inset-top)); }
+  </style>
+</head>
+<body>
+<div id="root"></div>
+<script type="text/babel">
+const { useState, useEffect } = React;
+
+const PROGRAM = {
+  "Upper A": {
+    emoji: "🔵", color: "#2563eb", light: "#eff6ff", border: "#bfdbfe",
+    exercises: [
+      { name: "Développé couché haltères", sets: 4, reps: "6-8", rest: "2-3 min", alternatives: ["Développé couché barre", "Développé couché machine", "Push-up lestés", "Dips lestés"] },
+      { name: "Développé incliné haltères", sets: 3, reps: "8-10", rest: "90s", alternatives: ["Développé incliné barre", "Développé incliné machine", "Câble incliné fly"] },
+      { name: "Rowing barre (Yates row)", sets: 3, reps: "8-10", rest: "90s", alternatives: ["Rowing haltère unilatéral", "Rowing machine Hammer", "Rowing câble assis"] },
+      { name: "Élévations latérales câble", sets: 3, reps: "12-15", rest: "60s", alternatives: ["Élévations latérales haltères", "Machine épaules latéral", "Élastiques latéral"] },
+      { name: "Curl haltères (poignet neutre)", sets: 2, reps: "10-12", rest: "60s", alternatives: ["Curl marteau", "Curl barre EZ", "Curl câble"] },
+      { name: "Triceps poulie haute", sets: 2, reps: "10-12", rest: "60s", alternatives: ["Triceps corde poulie", "Kickback haltère", "Dips banc"] }
+    ]
+  },
+  "Lower A": {
+    emoji: "🟢", color: "#16a34a", light: "#f0fdf4", border: "#bbf7d0",
+    exercises: [
+      { name: "Squat barre", sets: 4, reps: "6-8", rest: "2-3 min", alternatives: ["Goblet squat", "Squat hack machine", "Presse à cuisses"] },
+      { name: "Presse à cuisses", sets: 3, reps: "10-12", rest: "90s", alternatives: ["Squat hack machine", "Leg press 45°", "Squat Bulgarian split"] },
+      { name: "Fentes haltères", sets: 3, reps: "10/jambe", rest: "90s", alternatives: ["Fentes barre", "Fentes marchées", "Step-up haltères"] },
+      { name: "Leg curl couché", sets: 3, reps: "10-12", rest: "90s", alternatives: ["Leg curl assis", "Nordic curl", "Good morning"] },
+      { name: "Mollets debout", sets: 4, reps: "12-15", rest: "60s", alternatives: ["Mollets machine debout", "Mollets à la presse", "Mollets haltères unilatéral"] },
+      { name: "Gainage planche", sets: 3, reps: "45 sec", rest: "45s", alternatives: ["Mountain climber", "Hollow body hold", "Ab wheel"] }
+    ]
+  },
+  "Upper B": {
+    emoji: "🔴", color: "#dc2626", light: "#fef2f2", border: "#fecaca",
+    exercises: [
+      { name: "Traction assistée machine", sets: 4, reps: "6-8", rest: "2 min", alternatives: ["Lat pulldown prise large", "Assisted pull-up élastique", "Traction négative excentrique"] },
+      { name: "Lat pulldown prise large", sets: 3, reps: "8-10", rest: "90s", alternatives: ["Lat pulldown prise serrée", "Straight arm pulldown", "Pull-over câble"] },
+      { name: "Rowing câble assis", sets: 3, reps: "10-12", rest: "90s", alternatives: ["Rowing haltère unilatéral", "Rowing machine Hammer", "TRX row"] },
+      { name: "Développé militaire haltères", sets: 3, reps: "8-10", rest: "90s", alternatives: ["Développé militaire barre", "Arnold press", "Push press"] },
+      { name: "Face pull câble", sets: 3, reps: "15", rest: "60s", alternatives: ["Oiseau haltères rear delt", "Reverse pec deck", "Band pull apart"] },
+      { name: "Curl marteau", sets: 2, reps: "10-12", rest: "60s", alternatives: ["Curl haltères supination", "Curl câble", "Curl barre EZ"] }
+    ]
+  },
+  "Lower B": {
+    emoji: "🟡", color: "#d97706", light: "#fffbeb", border: "#fde68a",
+    exercises: [
+      { name: "Soulevé de terre roumain", sets: 4, reps: "8-10", rest: "2 min", alternatives: ["SDT jambes tendues", "Good morning", "Hip hinge câble"] },
+      { name: "Hip thrust barre", sets: 3, reps: "10-12", rest: "90s", alternatives: ["Hip thrust haltère", "Glute bridge sol", "Hip thrust machine"] },
+      { name: "Leg curl assis", sets: 3, reps: "10-12", rest: "90s", alternatives: ["Leg curl couché", "Nordic curl", "SDT roumain unilatéral"] },
+      { name: "Leg extension", sets: 3, reps: "12-15", rest: "60s", alternatives: ["Sissy squat", "Presse pied haut", "Step-up lent"] },
+      { name: "Mollets assis", sets: 4, reps: "12-15", rest: "60s", alternatives: ["Mollets machine debout", "Mollets à la presse", "Mollets haltères"] },
+      { name: "Ab wheel", sets: 3, reps: "10-12", rest: "60s", alternatives: ["Crunch câble", "Hanging knee raise", "Dragon flag débutant"] }
+    ]
+  }
+};
+
+const DAYS = Object.keys(PROGRAM);
+const MAX_WEEKS = 12;
+
+const STORAGE_KEY = "training_tracker_v1";
+
+function load() {
+  try { return JSON.parse(localStorage.getItem(STORAGE_KEY)) || {}; } catch { return {}; }
+}
+function save(data) {
+  try { localStorage.setItem(STORAGE_KEY, JSON.stringify(data)); } catch {}
+}
+
+function pk(day, week, ei, si) { return `${day}|${week}|${ei}|${si}`; }
+
+export default function App() {
+  const [perfs, setPerfs] = useState(load);
+  const [activeDay, setActiveDay] = useState(DAYS[0]);
+  const [week, setWeek] = useState(1);
+  const [openAlt, setOpenAlt] = useState(null);
+  const [view, setView] = useState("tracker");
+
+  useEffect(() => { save(perfs); }, [perfs]);
+
+  const setPerf = (d, w, ei, si, val) => setPerfs(p => ({ ...p, [pk(d, w, ei, si)]: val }));
+  const getPerf = (d, w, ei, si) => perfs[pk(d, w, ei, si)] || "";
+  const getPrev = (d, w, ei, si) => {
+    for (let pw = w - 1; pw >= 1; pw--) {
+      const v = perfs[pk(d, pw, ei, si)];
+      if (v) return { val: v, week: pw };
+    }
+    return null;
+  };
+
+  const prog = PROGRAM[activeDay];
+
+  const styles = {
+    container: { maxWidth: 480, margin: "0 auto", paddingBottom: 32 },
+    header: { background: prog.color, color: "#fff", padding: "16px 20px 12px", className: "safe-top" },
+    tab: (active, color) => ({
+      padding: "8px 14px", borderRadius: 20, fontSize: 13, fontWeight: 600, border: "none",
+      background: active ? color : "#f0f0f0", color: active ? "#fff" : "#555", cursor: "pointer"
+    }),
+    viewBtn: (active) => ({
+      flex: 1, padding: "10px 0", borderRadius: 10, fontSize: 13, fontWeight: 600, border: "none",
+      background: active ? "#1c1c1e" : "#e5e5ea", color: active ? "#fff" : "#555", cursor: "pointer"
+    }),
+    weekBtn: (active) => ({
+      width: 34, height: 34, borderRadius: "50%", fontSize: 12, fontWeight: 700, border: "none",
+      background: active ? "#1c1c1e" : "#e5e5ea", color: active ? "#fff" : "#555", cursor: "pointer"
+    }),
+    input: (up, down) => ({
+      width: "100%", padding: "10px 12px", borderRadius: 10, fontSize: 15,
+      border: `2px solid ${up ? "#22c55e" : down ? "#ef4444" : "#e5e5ea"}`,
+      background: up ? "#f0fdf4" : down ? "#fef2f2" : "#fff",
+      outline: "none", appearance: "none"
+    }),
+    card: { background: "#fff", borderRadius: 14, marginBottom: 10, overflow: "hidden", boxShadow: "0 1px 4px rgba(0,0,0,0.06)" },
+    altChip: { background: "#f5f5f7", border: "1px solid #e5e5ea", borderRadius: 20, padding: "5px 12px", fontSize: 12, color: "#444" }
+  };
+
+  return (
+    <div style={styles.container}>
+      {/* Header */}
+      <div style={{ ...styles.header, paddingTop: "max(16px, env(safe-area-inset-top))" }}>
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 12 }}>
+          <div>
+            <div style={{ fontSize: 20, fontWeight: 700 }}>💪 Training Tracker</div>
+            <div style={{ fontSize: 12, opacity: 0.8 }}>Upper / Lower — 12 semaines</div>
+          </div>
+        </div>
+        {/* View toggle */}
+        <div style={{ display: "flex", gap: 8, background: "rgba(255,255,255,0.15)", borderRadius: 12, padding: 4 }}>
+          {[["tracker","📋 Séance"], ["history","📈 Historique"]].map(([v, label]) => (
+            <button key={v} onClick={() => setView(v)} style={{
+              flex: 1, padding: "7px 0", borderRadius: 9, fontSize: 13, fontWeight: 600, border: "none",
+              background: view === v ? "#fff" : "transparent", color: view === v ? prog.color : "#fff", cursor: "pointer"
+            }}>{label}</button>
+          ))}
+        </div>
+      </div>
+
+      <div style={{ padding: "16px 16px 0" }}>
+        {/* Day tabs */}
+        <div style={{ display: "flex", gap: 8, flexWrap: "wrap", marginBottom: 14 }}>
+          {DAYS.map(d => (
+            <button key={d} onClick={() => { setActiveDay(d); setOpenAlt(null); }}
+              style={styles.tab(d === activeDay, PROGRAM[d].color)}>
+              {PROGRAM[d].emoji} {d}
+            </button>
+          ))}
+        </div>
+
+        {view === "tracker" && (
+          <>
+            {/* Week selector */}
+            <div style={{ marginBottom: 14 }}>
+              <div style={{ fontSize: 12, fontWeight: 600, color: "#888", marginBottom: 8 }}>SEMAINE</div>
+              <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
+                {Array.from({ length: MAX_WEEKS }, (_, i) => i + 1).map(w => (
+                  <button key={w} onClick={() => setWeek(w)} style={styles.weekBtn(w === week)}>{w}</button>
+                ))}
+              </div>
+            </div>
+
+            {/* Info banner */}
+            <div style={{ background: prog.light, border: `1px solid ${prog.border}`, borderRadius: 12, padding: "10px 14px", marginBottom: 14, fontSize: 12, color: prog.color, fontWeight: 500 }}>
+              Séance {activeDay} · Semaine {week} · {prog.exercises.length} exercices
+            </div>
+
+            {/* Exercises */}
+            {prog.exercises.map((ex, ei) => {
+              const altKey = `${activeDay}-${ei}`;
+              const isAltOpen = openAlt === altKey;
+              return (
+                <div key={ei} style={styles.card}>
+                  <div style={{ padding: "12px 14px 0" }}>
+                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 6 }}>
+                      <div style={{ flex: 1, paddingRight: 8 }}>
+                        <div style={{ fontWeight: 700, fontSize: 14, color: "#1c1c1e", lineHeight: 1.3 }}>{ex.name}</div>
+                        <div style={{ fontSize: 12, color: "#888", marginTop: 2 }}>{ex.sets} séries · {ex.reps} reps · {ex.rest}</div>
+                      </div>
+                      <button onClick={() => setOpenAlt(isAltOpen ? null : altKey)} style={{
+                        background: "#f5f5f7", border: "none", borderRadius: 8, padding: "6px 10px",
+                        fontSize: 11, fontWeight: 600, color: "#555", cursor: "pointer", whiteSpace: "nowrap"
+                      }}>🔄 Alt. {isAltOpen ? "▲" : "▼"}</button>
+                    </div>
+
+                    {isAltOpen && (
+                      <div style={{ background: "#f9f9f9", borderRadius: 10, padding: "10px 12px", marginBottom: 10, border: "1px solid #efefef" }}>
+                        <div style={{ fontSize: 11, fontWeight: 700, color: "#999", marginBottom: 8, letterSpacing: 0.5 }}>EXERCICES ÉQUIVALENTS</div>
+                        <div style={{ display: "flex", flexWrap: "wrap", gap: 6 }}>
+                          {ex.alternatives.map((alt, ai) => <span key={ai} style={styles.altChip}>{alt}</span>)}
+                        </div>
+                      </div>
+                    )}
+                  </div>
+
+                  <div style={{ padding: "8px 14px 14px" }}>
+                    {Array.from({ length: ex.sets }, (_, si) => {
+                      const val = getPerf(activeDay, week, ei, si);
+                      const prev = getPrev(activeDay, week, ei, si);
+                      const up = prev && val && parseFloat(val) > parseFloat(prev.val);
+                      const down = prev && val && parseFloat(val) < parseFloat(prev.val);
+                      return (
+                        <div key={si} style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: si < ex.sets - 1 ? 8 : 0 }}>
+                          <div style={{ fontSize: 12, color: "#aaa", width: 52, flexShrink: 0 }}>Série {si + 1}</div>
+                          <input
+                            type="number" inputMode="decimal" step="0.5"
+                            placeholder={prev ? `S${prev.week}: ${prev.val}kg` : "0 kg"}
+                            value={val}
+                            onChange={e => setPerf(activeDay, week, ei, si, e.target.value)}
+                            style={styles.input(up, down)}
+                          />
+                          <div style={{ width: 18, textAlign: "center", fontSize: 14 }}>
+                            {up ? "↑" : down ? "↓" : ""}
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+              );
+            })}
+          </>
+        )}
+
+        {view === "history" && (
+          <div>
+            {DAYS.map(dayName => {
+              const d = PROGRAM[dayName];
+              return (
+                <div key={dayName} style={{ ...styles.card, marginBottom: 16 }}>
+                  <div style={{ background: d.color, padding: "10px 14px" }}>
+                    <div style={{ color: "#fff", fontWeight: 700, fontSize: 14 }}>{d.emoji} {dayName}</div>
+                  </div>
+                  <div style={{ overflowX: "auto" }}>
+                    <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 11 }}>
+                      <thead>
+                        <tr style={{ background: "#f9f9f9" }}>
+                          <th style={{ textAlign: "left", padding: "8px 12px", fontWeight: 700, color: "#666", position: "sticky", left: 0, background: "#f9f9f9", minWidth: 110 }}>Exercice</th>
+                          {Array.from({ length: MAX_WEEKS }, (_, i) => (
+                            <th key={i} style={{ padding: "8px 6px", fontWeight: 600, color: "#999", minWidth: 36, textAlign: "center" }}>S{i + 1}</th>
+                          ))}
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {d.exercises.map((ex, ei) => (
+                          <tr key={ei} style={{ borderTop: "1px solid #f0f0f0" }}>
+                            <td style={{ padding: "8px 12px", fontWeight: 600, color: "#333", position: "sticky", left: 0, background: "#fff", maxWidth: 110, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{ex.name}</td>
+                            {Array.from({ length: MAX_WEEKS }, (_, wi) => {
+                              const vals = Array.from({ length: ex.sets }, (_, si) => getPerf(dayName, wi + 1, ei, si)).filter(Boolean).map(Number);
+                              const prevVals = wi > 0 ? Array.from({ length: ex.sets }, (_, si) => getPerf(dayName, wi, ei, si)).filter(Boolean).map(Number) : [];
+                              const cur = vals.length > 0 ? Math.max(...vals) : null;
+                              const prev = prevVals.length > 0 ? Math.max(...prevVals) : null;
+                              const up = cur && prev && cur > prev;
+                              return (
+                                <td key={wi} style={{ padding: "8px 4px", textAlign: "center", color: cur ? (up ? "#16a34a" : "#333") : "#ddd", fontWeight: cur ? (up ? 700 : 500) : 400 }}>
+                                  {cur ? `${cur}` : "—"}
+                                </td>
+                              );
+                            })}
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
+ReactDOM.createRoot(document.getElementById("root")).render(<App />);
+</script>
+</body>
+</html>
